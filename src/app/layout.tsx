@@ -2,7 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Header from '@/components/shared/Header'
-import Footer from '@/components/shared/Footer'
+import { ToastProvider } from './providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -11,21 +11,18 @@ export const metadata: Metadata = {
   description: 'A Zenn-like article posting service',
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <html lang="ja">
-      <body className={inter.className}>
-        <div className="flex flex-col min-h-screen">
+    <html lang="ja" className="h-full">
+      <body className={`${inter.className} h-full bg-gray-50`}>
+        <ToastProvider>
           <Header />
-          <main className="flex-grow bg-gray-50">
-            {children}
-          </main>
-          <Footer />
-        </div>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   )

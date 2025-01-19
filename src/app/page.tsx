@@ -2,16 +2,13 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import type { ArticleWithAuthor } from './types/database.types'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 export const dynamic = 'force-dynamic'
 
-async function getData() {
-  const cookieStore = cookies()
-  const supabase = createServerComponentClient({ 
-    cookies: () => cookieStore 
-  })
-
-  const { data: { user } } = await supabase.auth.getUser()
+export default async function Home() {
+  const supabase = createServerComponentClient({ cookies })
   const { data: articles } = await supabase
     .from('articles')
     .select('*, profiles(username, display_name)')
@@ -19,53 +16,45 @@ async function getData() {
     .order('created_at', { ascending: false })
     .limit(20)
 
-  return {
-    user,
-    articles: (articles as ArticleWithAuthor[]) || []
-  }
-}
-
-export default async function Home() {
-  const { user, articles } = await getData()
+  const typedArticles = articles as ArticleWithAuthor[] || []
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-8 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">最新の記事</h1>
-        {user ? (
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            ダッシュボード
-          </Link>
-        ) : (
-          <Link
-            href="/auth"
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            ログイン
-          </Link>
-        )}
-      </div>
-
-      <div className="space-y-6">
-        {articles.map((article) => (
-          <article key={article.id} className="bg-white rounded-lg shadow-sm p-6">
-            <Link href={`/articles/${article.id}`}>
-              <h2 className="text-xl font-bold hover:text-blue-500 mb-2">
-                {article.title}
-              </h2>
+    <div className="min-h-screen bg-gray-50 pt-20 pb-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {typedArticles.map((article) => (
+            <Link 
+              key={article.id}
+              href={`/articles/${article.id}`}
+              className="block group"
+            >
+              <article className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div className="p-6">
+                  <h2 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 mb-2 line-clamp-2">
+                    {article.title}
+                  </h2>
+                  <p className="text-gray-500 text-sm mb-4 line-clamp-3">
+                    {article.content.replace(/[#*`]/g, '').slice(0, 150)}...
+                  </p>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span className="font-medium">
+                      {article.profiles.display_name || article.profiles.username}
+                    </span>
+                    <time dateTime={article.created_at}>
+                      {format(new Date(article.created_at), 'PP', { locale: ja })}
+                    </time>
+                  </div>
+                </div>
+              </article>
             </Link>
-            <div className="text-gray-600">
-              作成者: {article.profiles.display_name || article.profiles.username}
-            </div>
-          </article>
-        ))}
-        {articles.length === 0 && (
-          <p className="text-center text-gray-500">
-            まだ記事がありません
-          </p>
+          ))}
+        </div>
+
+        {typedArticles.length === 0 && (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium text-gray-900">まだ記事がありません</h3>
+            <p className="mt-2 text-gray-500">最初の記事を投稿してみましょう</p>
+          </div>
         )}
       </div>
     </div>
